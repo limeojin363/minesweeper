@@ -1,36 +1,37 @@
-import { CellType } from "../../game/generate";
+import { createContext } from "react";
+import { COLS, MINES, ROWS } from "../../game.config";
+import useGame from "../../hooks/useGame";
 import { S } from "./Board.style";
 import Cell from "./Cell";
+import { CellType } from "../../utils/generate";
 
-const Board = ({
-  board,
-  onClickCell,
-  rowCount,
-  colCount,
-  flagHandler,
-}: {
+export const GameContext = createContext<{
+  flagToggleHandler: (y: number, x: number) => void;
+  openCellHandler: (y: number, x: number) => void;
   board: CellType[][];
-  flagHandler: (y: number, x: number) => void;
-  onClickCell: (y: number, x: number) => void;
-  rowCount: number;
-  colCount: number;
-}) => {
+}>({
+  flagToggleHandler: () => {},
+  openCellHandler: () => {},
+  board: [],
+});
+
+const Board = () => {
+  const { board, colCount, rowCount, flagToggleHandler, openCellHandler } =
+    useGame({
+      colCount: COLS,
+      rowCount: ROWS,
+      mineCount: MINES,
+      firstTurnOpening: true,
+    });
+
   return (
-    <S.GridContainer rowCount={rowCount} colCount={colCount}>
-      {board.map((row, y) =>
-        row.map(({ viewStatus }, x) => (
-          <Cell
-            onClickRight={(e) => {
-              e.preventDefault();
-              flagHandler(y, x);
-            }}
-            key={`${y}-${x}`}
-            onClick={() => onClickCell(y, x)}
-            viewStatus={viewStatus}
-          />
-        ))
-      )}
-    </S.GridContainer>
+    <GameContext.Provider value={{ flagToggleHandler, openCellHandler, board }}>
+      <S.GridContainer rowCount={rowCount} colCount={colCount}>
+        {board.map((row, y) =>
+          row.map((_, x) => <Cell y={y} x={x} key={`${y}-${x}`} />)
+        )}
+      </S.GridContainer>
+    </GameContext.Provider>
   );
 };
 

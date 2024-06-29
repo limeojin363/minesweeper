@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { CellType, Dimension2, convert1dTo2d } from "../game/generate";
-import { pickMinePos } from "../game/combination";
+import { CellType, Dimension2, convert1dTo2d } from "../utils/generate";
+import { pickMinePos } from "../utils/combination";
 import _ from "lodash";
 
 const dx = [-1, 0, 1];
@@ -38,7 +38,9 @@ const useGame = ({
     setBoard(boardNext);
   };
 
-  const onClickCell = (y: number, x: number) => {
+  const openCellHandler = (y: number, x: number) => {
+    if (board[y][x].viewStatus === "FLAGGED") return;
+
     const boardNext = _.cloneDeep(board);
 
     const assignMines = () => {
@@ -48,7 +50,10 @@ const useGame = ({
       );
 
       if (firstTurnOpening) {
-        const toRemoveList: Dimension2[] = getAdjoiningCellPositions(y, x);
+        const toRemoveList: Dimension2[] = [
+          [y, x],
+          ...getAdjoiningCellPositions(y, x),
+        ];
 
         const areEqual = (a: Dimension2, b: Dimension2) =>
           a[0] === b[0] && a[1] === b[1];
@@ -109,7 +114,7 @@ const useGame = ({
     }
   };
 
-  const flagHandler = (y: number, x: number) => {
+  const flagToggleHandler = (y: number, x: number) => {
     const boardNext = _.cloneDeep(board);
 
     if (board[y][x].viewStatus === "INITIAL") {
@@ -126,7 +131,7 @@ const useGame = ({
     console.log({ board });
   }, [board]);
 
-  return { board, onClickCell, flagHandler };
+  return { board, openCellHandler, flagToggleHandler, colCount, rowCount };
 };
 
 export default useGame;
