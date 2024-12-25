@@ -40,36 +40,39 @@ const Cell = ({ x, y }: { y: number; x: number }) => {
 
   const { viewStatus } = board[y][x];
 
-  if (!isMobile) {
-    const handlers = {
-      onContextMenu: (e: React.MouseEvent) => {
-        e.preventDefault();
+  const desktopHandlers = {
+    onContextMenu: (e: React.MouseEvent) => {
+      e.preventDefault();
 
-        flagToggleHandler(y, x);
-      },
-      onClick: () => openCellHandler(y, x),
-    };
+      flagToggleHandler(y, x);
+    },
+    onClick: () => openCellHandler(y, x),
+  };
 
-    return <S.CellContainer {...handlers} viewStatus={viewStatus} />;
-  }
+  const mobileHandlers = {
+    onTouchStart: () => {
+      timerRef.current = setTimeout(() => {
+        if (timerRef.current) {
+          flagToggleHandler(y, x);
+          timerRef.current = null;
+        }
+      }, 300);
+    },
+    onTouchMove: () => {
+      timerRef.current = null;
+    },
+    onTouchEnd: () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+        openCellHandler(y, x);
+      }
+    },
+  };
 
   return (
     <S.CellContainer
-      onTouchStart={() => {
-        timerRef.current = setTimeout(() => {
-          if (timerRef.current) {
-            flagToggleHandler(y, x);
-            timerRef.current = null;
-          }
-        }, 100);
-      }}
-      onTouchEnd={() => {
-        if (timerRef.current) {
-          clearTimeout(timerRef.current);
-          timerRef.current = null;
-          openCellHandler(y, x);
-        }
-      }}
+      {...(isMobile ? mobileHandlers : desktopHandlers)}
       viewStatus={viewStatus}
     />
   );
