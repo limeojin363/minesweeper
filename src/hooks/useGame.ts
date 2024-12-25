@@ -46,7 +46,7 @@ const useGame = ({
     const assignMines = () => {
       let candidateList: Dimension2[] = Array.from(
         { length: colCount * rowCount },
-        (_, i) => convert1dTo2d(i, rowCount)
+        (_, i) => convert1dTo2d(i, colCount)
       );
 
       if (firstTurnOpening) {
@@ -138,9 +138,10 @@ export default useGame;
 
 const visitedLog = (visited: boolean[][]) => {
   let ret = "";
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < visited.length; i++) {
     let row = "";
-    for (let j = 0; j < 10; j++) row += visited[i][j] ? "O" : "X";
+    for (let j = 0; j < visited[i].length; j++)
+      row += visited[i][j] ? "O" : "X";
     ret += row;
     ret += "\n";
   }
