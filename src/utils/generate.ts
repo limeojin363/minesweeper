@@ -19,8 +19,8 @@ export type Dimension2 = [number, number];
 
 export const convert1dTo2d = (
   origin: Dimension1,
-  rowCount: number
-): Dimension2 => [Math.floor(origin / rowCount), origin % rowCount];
+  colCount: number
+): Dimension2 => [Math.floor(origin / colCount), origin % colCount];
 
 export const convert2dTo1d = (origin: Dimension2, rowCount: number) =>
   origin[0] * rowCount + origin[1];
