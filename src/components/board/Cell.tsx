@@ -3,6 +3,7 @@ import { ViewStatus } from "../../utils/generate";
 import { useContext, useRef } from "react";
 import { GameContext } from "./Board";
 import { isMobile } from "react-device-detect";
+import { COLS, ROWS } from "../../game.config";
 
 const getBgColor = (viewStatus: ViewStatus) => {
   if (typeof viewStatus === "number") return "whitegray";
@@ -33,23 +34,12 @@ const getContent = (viewStatus: ViewStatus) => {
   }
 };
 
-const Cell = ({ x, y }: { y: number; x: number }) => {
+const useMobileHandlers = (y: number, x: number) => {
   const timerRef = useRef<number | null>(null);
 
-  const { flagToggleHandler, openCellHandler, board } = useContext(GameContext);
+  const { flagToggleHandler, openCellHandler } = useContext(GameContext);
 
-  const { viewStatus } = board[y][x];
-
-  const desktopHandlers = {
-    onContextMenu: (e: React.MouseEvent) => {
-      e.preventDefault();
-
-      flagToggleHandler(y, x);
-    },
-    onClick: () => openCellHandler(y, x),
-  };
-
-  const mobileHandlers = {
+  return {
     onTouchStart: () => {
       timerRef.current = setTimeout(() => {
         if (timerRef.current) {
@@ -69,6 +59,29 @@ const Cell = ({ x, y }: { y: number; x: number }) => {
       }
     },
   };
+}
+
+const useDesktopHandlers = (y: number, x: number) => {
+  const { flagToggleHandler, openCellHandler } = useContext(GameContext);
+
+  return {
+    onContextMenu: (e: React.MouseEvent) => {
+      e.preventDefault();
+      flagToggleHandler(y, x);
+    },
+    onClick: () => openCellHandler(y, x),
+  };
+};
+
+const useViewStatus = (y: number, x: number) => {
+  const { board } = useContext(GameContext);
+  return board[y][x].viewStatus;
+}
+
+const Cell = ({ x, y }: { y: number; x: number }) => {
+  const viewStatus = useViewStatus(y, x);
+  const mobileHandlers = useMobileHandlers(y, x);
+  const desktopHandlers = useDesktopHandlers(y, x);
 
   return (
     <S.CellContainer
@@ -87,5 +100,7 @@ const S = {
     &::after {
       content: "${({ viewStatus }) => getContent(viewStatus)}";
     }
+    aspect-ratio: 1 / 1;
+    width: calc(min(calc(100vh / ${ROWS}), calc(100vw / ${COLS})) - 4px);
   `,
 };
