@@ -1,5 +1,4 @@
 import { createContext } from "react";
-import { COLS, MINES, ROWS } from "../../game.config";
 import useGame from "../../hooks/useGame";
 import { S } from "./Board.style";
 import Cell from "./Cell";
@@ -17,12 +16,7 @@ export const GameContext = createContext<{
 
 const Board = () => {
   const { board, colCount, rowCount, flagToggleHandler, openCellHandler } =
-    useGame({
-      colCount: COLS,
-      rowCount: ROWS,
-      mineCount: MINES,
-      firstTurnOpening: true,
-    });
+    useGame({});
 
   return (
     <GameContext.Provider value={{ flagToggleHandler, openCellHandler, board }}>

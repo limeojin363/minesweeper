@@ -1,9 +1,10 @@
 import styled from "@emotion/styled";
 import { ViewStatus } from "../../utils/generate";
 import { useContext, useRef } from "react";
-import { GameContext } from "./Board";
 import { isMobile } from "react-device-detect";
-import { COLS, ROWS } from "../../game.config";
+import { GameContext } from "./Board";
+import { useAtomValue } from "jotai";
+import { initialSettingAtom } from "../initial/atom";
 
 const getBgColor = (viewStatus: ViewStatus) => {
   if (typeof viewStatus === "number") return "whitegray";
@@ -59,7 +60,7 @@ const useMobileHandlers = (y: number, x: number) => {
       }
     },
   };
-}
+};
 
 const useDesktopHandlers = (y: number, x: number) => {
   const { flagToggleHandler, openCellHandler } = useContext(GameContext);
@@ -76,17 +77,20 @@ const useDesktopHandlers = (y: number, x: number) => {
 const useViewStatus = (y: number, x: number) => {
   const { board } = useContext(GameContext);
   return board[y][x].viewStatus;
-}
+};
 
 const Cell = ({ x, y }: { y: number; x: number }) => {
   const viewStatus = useViewStatus(y, x);
   const mobileHandlers = useMobileHandlers(y, x);
   const desktopHandlers = useDesktopHandlers(y, x);
+  const { hztSize, vtSize } = useAtomValue(initialSettingAtom);
 
   return (
     <S.CellContainer
       {...(isMobile ? mobileHandlers : desktopHandlers)}
       viewStatus={viewStatus}
+      vtSize={vtSize}
+      hztSize={hztSize}
     />
   );
 };
@@ -94,13 +98,18 @@ const Cell = ({ x, y }: { y: number; x: number }) => {
 export default Cell;
 
 const S = {
-  CellContainer: styled.div<{ viewStatus: ViewStatus }>`
+  CellContainer: styled.div<{
+    viewStatus: ViewStatus;
+    vtSize: number;
+    hztSize: number;
+  }>`
     background-color: ${({ viewStatus }) => getBgColor(viewStatus)};
     border: 1px solid red;
     &::after {
       content: "${({ viewStatus }) => getContent(viewStatus)}";
     }
     aspect-ratio: 1 / 1;
-    width: calc(min(calc(100vh / ${ROWS}), calc(100vw / ${COLS})) - 4px);
+    width: ${({ hztSize, vtSize }) =>
+      `calc(min(calc(100vh / ${vtSize}), calc(100vw / ${hztSize})) - 4px)`};
   `,
 };

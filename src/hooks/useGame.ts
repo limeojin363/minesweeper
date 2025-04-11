@@ -2,26 +2,27 @@ import { useEffect, useState } from "react";
 import { CellType, Dimension2, convert1dTo2d } from "../utils/generate";
 import { pickMinePos } from "../utils/combination";
 import _ from "lodash";
+import { useAtomValue } from "jotai";
+import { initialSettingAtom } from "../pages/initial/atom";
 
 const dx = [-1, 0, 1];
 const dy = [-1, 0, 1];
 
 const useGame = ({
-  colCount,
-  rowCount,
-  mineCount,
-  firstTurnOpening,
+  firstTurnOpening = true,
 }: {
-  colCount: number;
-  rowCount: number;
-  mineCount: number;
   firstTurnOpening?: boolean;
 }) => {
+  const { hztSize, mines, vtSize } = useAtomValue(initialSettingAtom);
   const [isStarted, setIsStarted] = useState(false);
-  const [board, setBoard] = useState(getEmptyBoard({ colCount, rowCount }));
+  const [board, setBoard] = useState(
+    getEmptyBoard({ colCount: hztSize, rowCount: vtSize })
+  );
+
+  console.log({hztSize, vtSize})
 
   const out = (y: number, x: number) =>
-    y < 0 || x < 0 || y >= rowCount || x >= colCount;
+    y < 0 || x < 0 || y >= vtSize || x >= hztSize;
 
   const getAdjoiningCellPositions = (y: number, x: number) => {
     return dy
@@ -45,8 +46,8 @@ const useGame = ({
 
     const assignMines = () => {
       let candidateList: Dimension2[] = Array.from(
-        { length: colCount * rowCount },
-        (_, i) => convert1dTo2d(i, colCount)
+        { length: hztSize * vtSize },
+        (_, i) => convert1dTo2d(i, hztSize)
       );
 
       if (firstTurnOpening) {
@@ -66,7 +67,7 @@ const useGame = ({
         );
       }
 
-      const minePosList = pickMinePos(candidateList, mineCount);
+      const minePosList = pickMinePos(candidateList, mines);
 
       minePosList.forEach(([yy, xx]) => {
         boardNext[yy][xx].isMine = true;
@@ -81,7 +82,7 @@ const useGame = ({
     if (boardNext[y][x].isMine) {
       gameOver(y, x);
     } else {
-      const visited = getEmptyVisited({ colCount, rowCount });
+      const visited = getEmptyVisited({ colCount: hztSize, rowCount: vtSize });
 
       const positionsToReveal: Dimension2[] = [];
 
@@ -131,7 +132,13 @@ const useGame = ({
     console.log({ board });
   }, [board]);
 
-  return { board, openCellHandler, flagToggleHandler, colCount, rowCount };
+  return {
+    board,
+    openCellHandler,
+    flagToggleHandler,
+    colCount: hztSize,
+    rowCount: vtSize,
+  };
 };
 
 export default useGame;
