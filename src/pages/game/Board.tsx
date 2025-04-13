@@ -1,31 +1,22 @@
-import { createContext } from "react";
-import useGame from "../../hooks/useGame";
+import { useAtomValue } from "jotai";
 import { S } from "./Board.style";
 import Cell from "./Cell";
-import { CellType } from "../../utils/generate";
-
-export const GameContext = createContext<{
-  flagToggleHandler: (y: number, x: number) => void;
-  openCellHandler: (y: number, x: number) => void;
-  board: CellType[][];
-}>({
-  flagToggleHandler: () => {},
-  openCellHandler: () => {},
-  board: [],
-});
+import { initialSettingAtom } from "../../hooks/useGame";
 
 const Board = () => {
-  const { board, colCount, rowCount, flagToggleHandler, openCellHandler } =
-    useGame({});
+  const { hztSize, vtSize } = useAtomValue(initialSettingAtom);
 
   return (
-    <GameContext.Provider value={{ flagToggleHandler, openCellHandler, board }}>
-      <S.GridContainer rowCount={rowCount} colCount={colCount}>
-        {board.map((row, y) =>
-          row.map((_, x) => <Cell y={y} x={x} key={`${y}-${x}`} />)
-        )}
-      </S.GridContainer>
-    </GameContext.Provider>
+    <S.GridContainer vtSize={vtSize} hztSize={hztSize}>
+      {/* {board.map((row, y) =>
+        row.map((_, x) => <Cell y={y} x={x} key={`${y}-${x}`} />)
+      )} */}
+      {Array.from({ length: vtSize }, (_, y) =>
+        Array.from({ length: hztSize }, (_, x) => (
+          <Cell y={y} x={x} key={`${y}-${x}`} />
+        ))
+      )}
+    </S.GridContainer>
   );
 };
 

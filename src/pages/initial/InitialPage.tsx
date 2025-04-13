@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
-import { initialSettingAtom } from "./atom";
 import { useNavigate } from "react-router-dom";
+import { initialSettingAtom } from "../../hooks/useGame";
 
 const InitialPage = () => {
   const [state, setState] = useAtom(initialSettingAtom);
@@ -9,7 +9,7 @@ const InitialPage = () => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <label htmlFor='vtSize'>vtSize</label>
+      <label htmlFor="vtSize">vtSize</label>
       <select
         name="vtSize"
         onChange={(e) =>
@@ -24,7 +24,7 @@ const InitialPage = () => {
         <option value="10">10</option>
         <option value="15">15</option>
       </select>
-      <label htmlFor='hztSize'>hztSize</label>
+      <label htmlFor="hztSize">hztSize</label>
       <select
         name="hztSize"
         onChange={(e) =>
@@ -39,22 +39,22 @@ const InitialPage = () => {
         <option value="10">10</option>
         <option value="15">15</option>
       </select>
-      <label htmlFor='mines'>mines</label>
+      <label htmlFor="howManyMines">howManyMines</label>
       <select
-        name="mines"
+        name="howManyMines"
         onChange={(e) =>
           setState((prev) => ({
             ...prev,
-            mines: Number(e.target.value),
+            howManyMines: Number(e.target.value),
           }))
         }
-        value={state.mines}
-        id="mines">
+        value={state.howManyMines}
+        id="howManyMines">
         <option value="5">5</option>
         <option value="10">10</option>
         <option value="15">15</option>
       </select>
-      <button onClick={()=>navigate("/game")}>go</button>
+      <button onClick={() => navigate("/game")}>go</button>
     </div>
   );
 };

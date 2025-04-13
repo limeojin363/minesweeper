@@ -1,10 +1,13 @@
 import styled from "@emotion/styled";
 import { ViewStatus } from "../../utils/generate";
-import { useContext, useRef } from "react";
+import { useRef } from "react";
 import { isMobile } from "react-device-detect";
-import { GameContext } from "./Board";
 import { useAtomValue } from "jotai";
-import { initialSettingAtom } from "../initial/atom";
+import {
+  initialSettingAtom,
+  useCell,
+  viewStatusAtom,
+} from "../../hooks/useGame";
 
 const getBgColor = (viewStatus: ViewStatus) => {
   if (typeof viewStatus === "number") return "whitegray";
@@ -38,13 +41,13 @@ const getContent = (viewStatus: ViewStatus) => {
 const useMobileHandlers = (y: number, x: number) => {
   const timerRef = useRef<number | null>(null);
 
-  const { flagToggleHandler, openCellHandler } = useContext(GameContext);
+  const { flag, open } = useCell();
 
   return {
     onTouchStart: () => {
       timerRef.current = setTimeout(() => {
         if (timerRef.current) {
-          flagToggleHandler(y, x);
+          flag(y, x);
           timerRef.current = null;
         }
       }, 300);
@@ -56,27 +59,28 @@ const useMobileHandlers = (y: number, x: number) => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
-        openCellHandler(y, x);
+        open(y, x);
       }
     },
   };
 };
 
 const useDesktopHandlers = (y: number, x: number) => {
-  const { flagToggleHandler, openCellHandler } = useContext(GameContext);
+  const { flag, open } = useCell();
 
   return {
     onContextMenu: (e: React.MouseEvent) => {
       e.preventDefault();
-      flagToggleHandler(y, x);
+      flag(y, x);
     },
-    onClick: () => openCellHandler(y, x),
+    onClick: () => open(y, x),
   };
 };
 
 const useViewStatus = (y: number, x: number) => {
-  const { board } = useContext(GameContext);
-  return board[y][x].viewStatus;
+  const viewStatus = useAtomValue(viewStatusAtom);
+  if (!viewStatus) return "INITIAL";
+  return viewStatus[y][x];
 };
 
 const Cell = ({ x, y }: { y: number; x: number }) => {

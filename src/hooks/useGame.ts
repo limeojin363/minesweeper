@@ -1,195 +1,199 @@
-import { useEffect, useState } from "react";
-import { CellType, Dimension2, convert1dTo2d } from "../utils/generate";
-import { pickMinePos } from "../utils/combination";
-import _ from "lodash";
-import { useAtomValue } from "jotai";
-import { initialSettingAtom } from "../pages/initial/atom";
+import { atom, useAtom, useAtomValue } from "jotai";
+import { useImmerAtom } from "jotai-immer";
+import { PreconfiguredCellInfo, ViewStatus } from "../utils/generate";
+import { useEffect } from "react";
+import getPreset from "../utils/getPreset";
 
-const dx = [-1, 0, 1];
-const dy = [-1, 0, 1];
+export type CellViewType = "INITIAL" | "BOOMED" | "FLAGGED" | number;
 
-const useGame = ({
-  firstTurnOpening = true,
-}: {
-  firstTurnOpening?: boolean;
-}) => {
-  const { hztSize, mines, vtSize } = useAtomValue(initialSettingAtom);
-  const [isStarted, setIsStarted] = useState(false);
-  const [board, setBoard] = useState(
-    getEmptyBoard({ colCount: hztSize, rowCount: vtSize })
-  );
+type InitialSetting = {
+  vtSize: number;
+  hztSize: number;
+  howManyMines: number;
+};
 
-  console.log({hztSize, vtSize})
+export const initialSettingAtom = atom<InitialSetting>({
+  vtSize: 10,
+  hztSize: 10,
+  howManyMines: 10,
+});
 
-  const out = (y: number, x: number) =>
-    y < 0 || x < 0 || y >= vtSize || x >= hztSize;
+const preConfiguredBoardInfoAtom = atom<PreconfiguredCellInfo[][]>();
+export const viewStatusAtom = atom<ViewStatus[][]>();
 
-  const getAdjoiningCellPositions = (y: number, x: number) => {
-    return dy
-      .map((dyi) => dx.map((dxi) => [y + dyi, x + dxi] as Dimension2))
-      .reduce((acc, curr) => [...acc, ...curr], [])
-      .filter((item) => !out(...item) && !(item[0] === y && item[1] === x));
-  };
+const untouchedAtom = atom(true);
 
-  const gameOver = (y: number, x: number) => {
-    const boardNext = _.cloneDeep(board);
-
-    boardNext[y][x].viewStatus = "BOOMED";
-
-    setBoard(boardNext);
-  };
-
-  const openCellHandler = (y: number, x: number) => {
-    if (board[y][x].viewStatus === "FLAGGED") return;
-
-    const boardNext = _.cloneDeep(board);
-
-    const assignMines = () => {
-      let candidateList: Dimension2[] = Array.from(
-        { length: hztSize * vtSize },
-        (_, i) => convert1dTo2d(i, hztSize)
-      );
-
-      if (firstTurnOpening) {
-        const toRemoveList: Dimension2[] = [
-          [y, x],
-          ...getAdjoiningCellPositions(y, x),
-        ];
-
-        const areEqual = (a: Dimension2, b: Dimension2) =>
-          a[0] === b[0] && a[1] === b[1];
-
-        candidateList = candidateList.filter(
-          (candidateItem) =>
-            toRemoveList.findIndex((toRemoveItem) =>
-              areEqual(candidateItem, toRemoveItem)
-            ) === -1
-        );
-      }
-
-      const minePosList = pickMinePos(candidateList, mines);
-
-      minePosList.forEach(([yy, xx]) => {
-        boardNext[yy][xx].isMine = true;
-      });
-    };
-
-    if (!isStarted) {
-      assignMines();
-      setIsStarted(true);
-    }
-
-    if (boardNext[y][x].isMine) {
-      gameOver(y, x);
-    } else {
-      const visited = getEmptyVisited({ colCount: hztSize, rowCount: vtSize });
-
-      const positionsToReveal: Dimension2[] = [];
-
-      const recursivelyPush = (yy: number, xx: number) => {
-        visited[yy][xx] = true;
-        positionsToReveal.push([yy, xx]);
-
-        visitedLog(visited);
-
-        const adjoiningCellPositions = getAdjoiningCellPositions(yy, xx);
-
-        if (
-          adjoiningCellPositions.every(([ny, nx]) => !boardNext[ny][nx].isMine)
-        ) {
-          adjoiningCellPositions.forEach(([ny, nx]) => {
-            if (!visited[ny][nx]) recursivelyPush(ny, nx);
-          });
-        }
-      };
-
-      recursivelyPush(y, x);
-
-      positionsToReveal.forEach(([yy, xx]) => {
-        boardNext[yy][xx].viewStatus = getAdjoiningCellPositions(yy, xx)
-          .map(([yyy, xxx]) => boardNext[yyy][xxx])
-          .reduce((acc, curr) => (curr.isMine ? ++acc : acc), 0);
-      });
-
-      setBoard(boardNext);
-    }
-  };
-
-  const flagToggleHandler = (y: number, x: number) => {
-    const boardNext = _.cloneDeep(board);
-
-    if (board[y][x].viewStatus === "INITIAL") {
-      boardNext[y][x].viewStatus = "FLAGGED";
-    }
-    if (board[y][x].viewStatus === "FLAGGED") {
-      boardNext[y][x].viewStatus = "INITIAL";
-    }
-
-    setBoard(boardNext);
-  };
+export const useCell = () => {
+  const initialSetting = useAtomValue(initialSettingAtom);
+  const [untouched, setUntouched] = useAtom(untouchedAtom);
+  const [preset, setPreset] = useAtom(preConfiguredBoardInfoAtom);
+  const [viewStatus, setViewStatus] = useImmerAtom(viewStatusAtom);
 
   useEffect(() => {
-    console.log({ board });
-  }, [board]);
+    if (!viewStatus) {
+      setViewStatus((draft) => {
+        draft = Array.from(
+          { length: initialSetting.vtSize },
+          () =>
+            Array.from(
+              { length: initialSetting.hztSize },
+              () => "INITIAL"
+            ) as ViewStatus[]
+        );
+        return draft;
+      });
+    }
+  }, [
+    viewStatus,
+    setViewStatus,
+    initialSetting.vtSize,
+    initialSetting.hztSize,
+  ]);
+
+  const flag = (y: number, x: number) => {
+    if (!viewStatus) return;
+    if (untouched) return;
+
+    const nowStatus = viewStatus[y][x];
+    if (isFixed(nowStatus)) return;
+
+    setViewStatus((draft) => {
+      const alreadyFlagged = nowStatus === "FLAGGED";
+      draft![y][x] = alreadyFlagged ? "INITIAL" : "FLAGGED";
+    });
+  };
+
+  const open = (y: number, x: number) => {
+    if (!viewStatus) return;
+    const nowStatus = viewStatus[y][x];
+    if (isFixed(nowStatus)) return;
+
+    if (untouched) {
+      setUntouched(false);
+      // 첫 클릭 위치에 따라 맵 생성
+      const generatedPreset = getPreset({
+        ...initialSetting,
+        firstY: y,
+        firstX: x,
+      });
+
+      setPreset(generatedPreset);
+      setViewStatus((draft) => {
+        getPositionsToReveal({
+          preset: generatedPreset,
+          x,
+          y,
+        }).forEach(({ x: revealX, y: revealY }) => {
+          const nowStatus = draft![revealY][revealX];
+          if (isFixed(nowStatus)) return;
+          draft![revealY][revealX] =
+            generatedPreset[revealY][revealX].howManyAdjoiningMines;
+        });
+      });
+    } else {
+      if (!preset) return;
+
+      const nowPreset = preset[y][x];
+      if (nowPreset.isMine) {
+        setViewStatus((draft) => {
+          draft![y][x] = "BOOMED";
+        });
+      } else {
+        setViewStatus((draft) => {
+          getPositionsToReveal({
+            preset,
+            x,
+            y,
+          }).forEach(({ x: revealX, y: revealY }) => {
+            const nowStatus = draft![revealY][revealX];
+            if (isFixed(nowStatus)) return;
+            draft![revealY][revealX] =
+              preset[revealY][revealX].howManyAdjoiningMines;
+          });
+        });
+      }
+    }
+  };
 
   return {
-    board,
-    openCellHandler,
-    flagToggleHandler,
-    colCount: hztSize,
-    rowCount: vtSize,
+    flag,
+    open,
   };
 };
 
-export default useGame;
+const isFixed = (viewStatus: ViewStatus) =>
+  typeof viewStatus === "number" || viewStatus === "BOOMED";
 
-const visitedLog = (visited: boolean[][]) => {
-  let ret = "";
-  for (let i = 0; i < visited.length; i++) {
-    let row = "";
-    for (let j = 0; j < visited[i].length; j++)
-      row += visited[i][j] ? "O" : "X";
-    ret += row;
-    ret += "\n";
-  }
-
-  console.log(ret);
-};
-
-const getEmptyBoard = ({
-  colCount,
-  rowCount,
+/* 
+  y, x, preset으로부터, bfs 방식으로 해당 좌표 주변의, 주변 8칸이 모두 안전 영역인 안전 영역을 전부 구하기 
+  (y, x)는안전영역이라는 전제
+ */
+const getPositionsToReveal = ({
+  preset,
+  x,
+  y,
 }: {
-  rowCount: number;
-  colCount: number;
+  preset: PreconfiguredCellInfo[][];
+  y: number;
+  x: number;
 }) => {
-  const ret: CellType[][] = [];
+  const vtSize = preset.length;
+  const hztSize = preset[0].length;
+  const positionsToReveal: { x: number; y: number }[] = [{ x, y }];
 
-  for (let i = 0; i < rowCount; i++) {
-    ret[i] = [];
-    for (let j = 0; j < colCount; j++)
-      ret[i][j] = {
-        isMine: false,
-        viewStatus: "INITIAL",
-      };
+  const getAdjoiningCellPositions = (y: number, x: number) => {
+    const directions = [
+      [-1, -1],
+      [-1, 0],
+      [-1, 1],
+      [0, -1],
+      [0, 1],
+      [1, -1],
+      [1, 0],
+      [1, 1],
+    ];
+
+    return directions
+      .map(([dy, dx]) => ({
+        y: y + dy,
+        x: x + dx,
+      }))
+      .filter(({ y, x }) => y >= 0 && y < vtSize && x >= 0 && x < hztSize);
+  };
+
+  const queue: { x: number; y: number }[] = [];
+  const visited = preset.map((row) => row.map(() => false));
+
+  if (
+    getAdjoiningCellPositions(y, x).every(({ y, x }) => !preset[y][x].isMine)
+  ) {
+    queue.push({ x, y });
+    visited[y][x] = true;
   }
 
-  return ret;
-};
+  while (queue.length > 0) {
+    const { x: currX, y: currY } = queue.shift()!;
 
-const getEmptyVisited = ({
-  colCount,
-  rowCount,
-}: {
-  rowCount: number;
-  colCount: number;
-}) => {
-  const ret: boolean[][] = [];
+    getAdjoiningCellPositions(currY, currX).forEach(({ y, x }) => {
+      positionsToReveal.push({ x, y });
+    });
 
-  for (let i = 0; i < rowCount; i++) {
-    ret[i] = [];
-    for (let j = 0; j < colCount; j++) ret[i][j] = false;
+    for (const { x: adjX, y: adjY } of getAdjoiningCellPositions(
+      currY,
+      currX
+    )) {
+      if (
+        !visited[adjY][adjX] &&
+        !preset[adjY][adjX].isMine &&
+        getAdjoiningCellPositions(adjY, adjX).every(
+          ({ y, x }) => !preset[y][x].isMine
+        )
+      ) {
+        queue.push({ x: adjX, y: adjY });
+        visited[adjY][adjX] = true;
+      }
+    }
   }
 
-  return ret;
+  return positionsToReveal;
 };

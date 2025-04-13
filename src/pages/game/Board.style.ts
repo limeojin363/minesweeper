@@ -1,12 +1,12 @@
 import styled from "@emotion/styled";
 
 export const S = {
-  GridContainer: styled.div<{ rowCount: number; colCount: number }>`
+  GridContainer: styled.div<{ vtSize: number; hztSize: number }>`
     display: grid;
 
-    aspect-ratio: ${({ colCount, rowCount }) => `${colCount} / ${rowCount}`};
+    aspect-ratio: ${({ hztSize, vtSize }) => `${hztSize} / ${vtSize}`};
 
-    grid-template-columns: repeat(${({ colCount }) => colCount}, 1fr);
-    grid-template-rows: repeat(${({ rowCount }) => rowCount}, 1fr);
+    grid-template-columns: repeat(${({ hztSize: hztSize }) => hztSize}, 1fr);
+    grid-template-rows: repeat(${({ vtSize: vtSize }) => vtSize}, 1fr);
   `,
 };
