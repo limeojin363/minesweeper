@@ -1429,6 +1429,11 @@ isexe@^2.0.0:
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-2.0.0.tgz#e8fbf374dc556ff8947a10dcb0572d633f2cfa10"
   integrity sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==
 
+jotai-immer@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/jotai-immer/-/jotai-immer-0.4.1.tgz#30da13384d7d8341685c79aa78cffa19756c8832"
+  integrity sha512-nQTt1HBKie/5OJDck1qLpV1PeBA6bjJLAczEYAx70PD8R4Mbu7gtexfBUCzJh6W6ecsOfwHksAYAesVth6SN9A==
+
 jotai@^2.12.2:
   version "2.12.2"
   resolved "https://registry.yarnpkg.com/jotai/-/jotai-2.12.2.tgz#21626f5f019fc971b4da6bc528790a02d1448e3c"
