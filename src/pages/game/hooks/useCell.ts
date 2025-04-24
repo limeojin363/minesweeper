@@ -2,6 +2,7 @@ import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { useMemo } from "react";
 import { CellPresetInfo, CellStatus, LogicalPosition, Unit } from "./types";
+import { PrimitiveAtom } from "jotai";
 
 // dependency: configAtom
 export const allCellPositionsAtom = atom<LogicalPosition[]>((get) => {
@@ -18,17 +19,30 @@ export const allCellPositionsAtom = atom<LogicalPosition[]>((get) => {
   return positions;
 });
 
-const cellStatusAtomFamily = atomFamily(
-  (_: LogicalPosition) => atom<CellStatus>("INITIAL"),
-  (a, b) => a.x === b.x && a.y === b.y
-);
+const getCellStatusAtom = atom((get) => {
+  // allCellPositionsAtom 변동 시 초기화
+  const allCellPositions = get(allCellPositionsAtom);
+
+  const ret: { [key: LogicalPositionKey]: PrimitiveAtom<CellStatus> } = {};
+
+  allCellPositions.forEach((pos) => {
+    const key = getCellPositionKey(pos);
+    ret[key] = atom<CellStatus>("INITIAL");
+  });
+
+  return ({ y, x }: LogicalPosition) => {
+    const key = getCellPositionKey({ y, x });
+    return ret[key];
+  };
+});
 
 export type CellView = "INITIAL" | "FLAGGED" | "BOOMED" | number;
 
-// dependency: cellStatusAtomFamily
+// dependency: getCellStatusAtom
 const getCellViewAtom = ({ y, x }: LogicalPosition) =>
   atom((get) => {
-    const status = get(cellStatusAtomFamily({ y, x }));
+    ``;
+    const status = get(get(getCellStatusAtom)({ y, x }));
     const { isMine, howManyAdjoiningMines } = get(
       cellPresetInfoAtomFamily({ y, x })
     );
@@ -138,7 +152,8 @@ const adjOpenAtom = (() => {
 
     adjZeroPosGroup.forEach((pos) => {
       // console.log("adjOpen", pos);
-      set(cellStatusAtomFamily(pos), "REVEALED");
+      const statusAtom = get(getCellStatusAtom)(pos);
+      set(statusAtom, "REVEALED");
     });
   });
 })();
@@ -270,11 +285,13 @@ export const useOpen = () => {
 };
 
 const flagToggleAtom = atom(null, (get, set, { y, x }: LogicalPosition) => {
-  const status = get(cellStatusAtomFamily({ y, x }));
+  const statusAtom = get(getCellStatusAtom)({ y, x });
+  const status = get(statusAtom);
+
   if (status === "INITIAL") {
-    set(cellStatusAtomFamily({ y, x }), "FLAGGED");
+    set(statusAtom, "FLAGGED");
   } else if (status === "FLAGGED") {
-    set(cellStatusAtomFamily({ y, x }), "INITIAL");
+    set(statusAtom, "INITIAL");
   }
 });
 
