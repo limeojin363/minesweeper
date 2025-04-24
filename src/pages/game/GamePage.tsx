@@ -2,6 +2,7 @@ import styled from "@emotion/styled";
 import Board from "./Board";
 
 const GamePage = () => {
+  console.log(123);
   return (
     <BoardWrapper>
       <Board />

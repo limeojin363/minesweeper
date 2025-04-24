@@ -1,23 +1,28 @@
+import styled from "@emotion/styled";
 import { useAtomValue } from "jotai";
-import { S } from "./Board.style";
 import Cell from "./Cell";
-import { initialSettingAtom } from "../../hooks/useGame";
+import { allCellPositionsAtom, configAtom } from "./hooks/useCell";
 
 const Board = () => {
-  const { hztSize, vtSize } = useAtomValue(initialSettingAtom);
+  const { hztSize, vtSize } = useAtomValue(configAtom);
+
+  const allPos = useAtomValue(allCellPositionsAtom);
 
   return (
-    <S.GridContainer vtSize={vtSize} hztSize={hztSize}>
-      {/* {board.map((row, y) =>
-        row.map((_, x) => <Cell y={y} x={x} key={`${y}-${x}`} />)
-      )} */}
-      {Array.from({ length: vtSize }, (_, y) =>
-        Array.from({ length: hztSize }, (_, x) => (
-          <Cell y={y} x={x} key={`${y}-${x}`} />
-        ))
-      )}
-    </S.GridContainer>
+    <S.BoardContainer vtSize={vtSize} hztSize={hztSize}>
+      {allPos.map((pos) => (
+        <Cell y={pos.y} x={pos.x} key={`${pos.y}-${pos.x}`} />
+      ))}
+    </S.BoardContainer>
   );
 };
 
 export default Board;
+
+const S = {
+  BoardContainer: styled.div<{ vtSize: number; hztSize: number }>`
+    width: 100%;
+    height: 100%;
+    position: relative;
+  `,
+};

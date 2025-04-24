@@ -1,9 +1,9 @@
 import { useAtom } from "jotai";
+import { configAtom } from "../game/hooks/useCell";
 import { useNavigate } from "react-router-dom";
-import { initialSettingAtom } from "../../hooks/useGame";
 
-const InitialPage = () => {
-  const [state, setState] = useAtom(initialSettingAtom);
+const Dump = () => {
+  const [state, setState] = useAtom(configAtom);
 
   const navigate = useNavigate();
 
@@ -59,4 +59,4 @@ const InitialPage = () => {
   );
 };
 
-export default InitialPage;
+export default Dump;

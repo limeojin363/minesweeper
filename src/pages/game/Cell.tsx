@@ -1,15 +1,12 @@
 import styled from "@emotion/styled";
-import { ViewStatus } from "../../utils/generate";
 import { useRef } from "react";
-import { isMobile } from "react-device-detect";
 import { useAtomValue } from "jotai";
-import {
-  initialSettingAtom,
-  useCell,
-  viewStatusAtom,
-} from "../../hooks/useGame";
+import { CellView, configAtom, useCellView, useFlag, useOpen } from "./hooks/useCell";
+import { LogicalPosition } from "./hooks/types";
+import { isMobile } from "react-device-detect";
+import { css } from "@emotion/react";
 
-const getBgColor = (viewStatus: ViewStatus) => {
+const getBgColor = (viewStatus: CellView) => {
   if (typeof viewStatus === "number") return "whitegray";
 
   switch (viewStatus) {
@@ -22,7 +19,7 @@ const getBgColor = (viewStatus: ViewStatus) => {
   }
 };
 
-const getContent = (viewStatus: ViewStatus) => {
+const getContent = (viewStatus: CellView) => {
   if (typeof viewStatus === "number") {
     if (viewStatus > 0) return " " + String(viewStatus);
     else return " ";
@@ -38,16 +35,17 @@ const getContent = (viewStatus: ViewStatus) => {
   }
 };
 
-const useMobileHandlers = (y: number, x: number) => {
+const useMobileHandlers = ({ y, x }: LogicalPosition) => {
   const timerRef = useRef<number | null>(null);
 
-  const { flag, open } = useCell();
+  const flag = useFlag();
+  const open = useOpen();
 
   return {
     onTouchStart: () => {
       timerRef.current = setTimeout(() => {
         if (timerRef.current) {
-          flag(y, x);
+          flag({ y, x });
           timerRef.current = null;
         }
       }, 300);
@@ -59,35 +57,30 @@ const useMobileHandlers = (y: number, x: number) => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
-        open(y, x);
+        open({ y, x });
       }
     },
   };
 };
 
-const useDesktopHandlers = (y: number, x: number) => {
-  const { flag, open } = useCell();
+const useDesktopHandlers = ({ y, x }: LogicalPosition) => {
+  const flag = useFlag();
+  const open = useOpen();
 
   return {
     onContextMenu: (e: React.MouseEvent) => {
       e.preventDefault();
-      flag(y, x);
+      flag({ y, x });
     },
-    onClick: () => open(y, x),
+    onClick: () => open({ y, x }),
   };
 };
 
-const useViewStatus = (y: number, x: number) => {
-  const viewStatus = useAtomValue(viewStatusAtom);
-  if (!viewStatus) return "INITIAL";
-  return viewStatus[y][x];
-};
-
 const Cell = ({ x, y }: { y: number; x: number }) => {
-  const viewStatus = useViewStatus(y, x);
-  const mobileHandlers = useMobileHandlers(y, x);
-  const desktopHandlers = useDesktopHandlers(y, x);
-  const { hztSize, vtSize } = useAtomValue(initialSettingAtom);
+  const mobileHandlers = useMobileHandlers({ y, x });
+  const desktopHandlers = useDesktopHandlers({ y, x });
+  const viewStatus = useCellView({ y, x });
+  const { hztSize, vtSize } = useAtomValue(configAtom);
 
   return (
     <S.CellContainer
@@ -95,6 +88,8 @@ const Cell = ({ x, y }: { y: number; x: number }) => {
       viewStatus={viewStatus}
       vtSize={vtSize}
       hztSize={hztSize}
+      y={y}
+      x={x}
     />
   );
 };
@@ -103,9 +98,11 @@ export default Cell;
 
 const S = {
   CellContainer: styled.div<{
-    viewStatus: ViewStatus;
+    viewStatus: CellView;
     vtSize: number;
     hztSize: number;
+    y: number;
+    x: number;
   }>`
     background-color: ${({ viewStatus }) => getBgColor(viewStatus)};
     border: 1px solid red;
@@ -113,7 +110,29 @@ const S = {
       content: "${({ viewStatus }) => getContent(viewStatus)}";
     }
     aspect-ratio: 1 / 1;
-    width: ${({ hztSize, vtSize }) =>
-      `calc(min(calc(100vh / ${vtSize}), calc(100vw / ${hztSize})) - 4px)`};
+    position: absolute;
+
+    ${({ hztSize, vtSize, x, y }) =>
+      sqaureCellSize({ hztSize, vtSize, x, y })};
   `,
+};
+
+const sqaureCellSize = ({
+  x,
+  y,
+  hztSize,
+  vtSize,
+}: {
+  y: number;
+  x: number;
+  vtSize: number;
+  hztSize: number;
+}) => {
+  const cellSize = `calc(min(calc(100vh / ${vtSize}), calc(100vw / ${hztSize})) - 4px)`;
+
+  return css`
+    width: ${cellSize};
+    top: calc(${y} * ${cellSize});
+    left: calc(${x} * ${cellSize});
+  `;
 };
