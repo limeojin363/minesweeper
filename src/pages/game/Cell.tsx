@@ -1,7 +1,13 @@
 import styled from "@emotion/styled";
 import { useRef } from "react";
 import { useAtomValue } from "jotai";
-import { CellView, configAtom, useCellView, useFlag, useOpen } from "./hooks/useCell";
+import {
+  CellView,
+  configAtom,
+  useCellView,
+  useFlag,
+  useOpen,
+} from "./hooks/useCell";
 import { LogicalPosition } from "./hooks/types";
 import { isMobile } from "react-device-detect";
 import { css } from "@emotion/react";
@@ -35,13 +41,12 @@ const getContent = (viewStatus: CellView) => {
   }
 };
 
-const useMobileHandlers = ({ y, x }: LogicalPosition) => {
-  const timerRef = useRef<number | null>(null);
-
+const useHandlers = ({ y, x }: LogicalPosition) => {
   const flag = useFlag();
   const open = useOpen();
+  const timerRef = useRef<number | null>(null);
 
-  return {
+  const mobileHandlers = {
     onTouchStart: () => {
       timerRef.current = setTimeout(() => {
         if (timerRef.current) {
@@ -61,24 +66,22 @@ const useMobileHandlers = ({ y, x }: LogicalPosition) => {
       }
     },
   };
-};
-
-const useDesktopHandlers = ({ y, x }: LogicalPosition) => {
-  const flag = useFlag();
-  const open = useOpen();
-
-  return {
+  const desktopHandlers = {
     onContextMenu: (e: React.MouseEvent) => {
       e.preventDefault();
       flag({ y, x });
     },
     onClick: () => open({ y, x }),
   };
+
+  return {
+    mobileHandlers,
+    desktopHandlers,
+  };
 };
 
 const Cell = ({ x, y }: { y: number; x: number }) => {
-  const mobileHandlers = useMobileHandlers({ y, x });
-  const desktopHandlers = useDesktopHandlers({ y, x });
+  const { desktopHandlers, mobileHandlers } = useHandlers({ y, x });
   const viewStatus = useCellView({ y, x });
   const { hztSize, vtSize } = useAtomValue(configAtom);
 
@@ -112,8 +115,7 @@ const S = {
     aspect-ratio: 1 / 1;
     position: absolute;
 
-    ${({ hztSize, vtSize, x, y }) =>
-      sqaureCellSize({ hztSize, vtSize, x, y })};
+    ${({ hztSize, vtSize, x, y }) => sqaureCellSize({ hztSize, vtSize, x, y })};
   `,
 };
 
