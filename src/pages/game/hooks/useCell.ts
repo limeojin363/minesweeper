@@ -6,16 +6,35 @@ import { PrimitiveAtom } from "jotai";
 
 // dependency: configAtom
 export const allCellPositionsAtom = atom<LogicalPosition[]>((get) => {
-  const { hztSize, vtSize } = get(configAtom);
+  const { hztSize, vtSize, unit } = get(configAtom);
+
   const positions: LogicalPosition[] = [];
-  for (let y = 0; y < vtSize; y++) {
-    for (let x = 0; x < hztSize; x++) {
-      positions.push({
-        y,
-        x,
-      });
-    }
-  }
+
+  if (unit === "SQAURE")
+    for (let y = 0; y < vtSize; y++)
+      for (let x = 0; x < hztSize; x++)
+        positions.push({
+          y,
+          x,
+        });
+
+  if (unit === "HEXAGON") 
+    for (let y = 0; y < vtSize; y++)
+      for (let x = y % 2; x < hztSize; x += 2)
+        positions.push({
+          y,
+          x,
+        });
+  
+
+  if (unit === "TRIANGLE") 
+    for (let y = 0; y < vtSize; y++)
+      for (let x = 0; x < hztSize; x++)
+        positions.push({
+          y,
+          x,
+        });
+
   return positions;
 });
 
@@ -160,12 +179,12 @@ const adjOpenAtom = (() => {
 
 const AdjOffset: { [key in Unit]: { dx: number; dy: number }[] } = {
   HEXAGON: [
-    // { dx: 0, dy: -1 },
-    // { dx: 1, dy: -1 },
-    // { dx: 1, dy: 0 },
-    // { dx: 0, dy: 1 },
-    // { dx: -1, dy: 0 },
-    // { dx: -1, dy: -1 },
+    { dy: 2, dx: 0 },
+    { dy: -2, dx: 0 },
+    { dy: 1, dx: -1 },
+    { dy: 1, dx: 1 },
+    { dy: -1, dx: 1 },
+    { dy: -1, dx: -1 },
   ],
   SQAURE: [
     { dx: -1, dy: -1 },
@@ -191,13 +210,14 @@ type Config = {
   vtSize: number;
   hztSize: number;
   howManyMines: number;
-  unit?: "SQAURE" | "HEXAGON" | "TRIANGLE";
+  unit: "SQAURE" | "HEXAGON" | "TRIANGLE";
 };
 
 export const configAtom = atom<Config>({
   vtSize: 10,
   hztSize: 10,
   howManyMines: 10,
+  unit: "HEXAGON",
 });
 
 // dependency: allCellPositionsAtom, configAtom

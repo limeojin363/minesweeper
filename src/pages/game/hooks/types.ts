@@ -1,4 +1,3 @@
-
 export type CellPresetInfo = {
   isMine: boolean;
   howManyAdjoiningMines: number;
@@ -9,7 +8,6 @@ export type CellPresetInfo = {
 export type CellStatus = "INITIAL" | "FLAGGED" | "REVEALED";
 
 export type CellView = "INITIAL" | "FLAGGED" | "BOOMED" | number;
-
 
 export type LogicalPosition = {
   y: number;
